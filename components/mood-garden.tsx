@@ -16,6 +16,9 @@ export function MoodGarden() {
   const scene = scenes[sceneId]
   const selectMood = (mood: MoodId) => setSceneId(mood)
 
+  const gardenRef = useRef<HTMLElement>(null)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+
   return (
     <main className="relative h-dvh w-full overflow-hidden bg-slate-800 text-white">
       <div className="absolute inset-0">
