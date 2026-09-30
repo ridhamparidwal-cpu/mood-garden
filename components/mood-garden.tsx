@@ -18,6 +18,13 @@ export function MoodGarden() {
 
   const gardenRef = useRef<HTMLElement>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const toggleFullscreen = async () => {
+  if (!document.fullscreenElement) {
+    await gardenRef.current?.requestFullscreen()
+  } else {
+    await document.exitFullscreen()
+  }
+}
 
   return (
     <main className="relative h-dvh w-full overflow-hidden bg-slate-800 text-white">
