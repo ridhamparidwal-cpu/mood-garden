@@ -54,13 +54,13 @@ export function SceneWeather({ sceneId }: { sceneId: SceneId }) {
       return (
         <>
           <Storm />
-          {scene.rain && <RainCanvas config={scene.rain} />}
           <DriftingParticles
             kind="leaf"
             count={35}
             colors={['#1a2f1a', '#0f1f0f', '#1f3f1f', '#0d1f0d']}
-            minDuration={2}
-            maxDuration={4}
+            minDuration={6}
+            maxDuration={10}
+            startPosition="top-left"
           />
         </>
       )
