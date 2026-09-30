@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { ArrowLeft } from 'lucide-react'
 import { scenes, type MoodId, type SceneId } from '@/lib/moods'
