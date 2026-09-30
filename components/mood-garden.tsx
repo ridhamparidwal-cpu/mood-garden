@@ -65,6 +65,12 @@ export function MoodGarden() {
           Mood Garden
         </button>
         <AmbienceToggle sceneId={sceneId} />
+        <button
+  onClick={toggleFullscreen}
+  className="rounded-full bg-white/20 px-4 py-2 text-sm text-white backdrop-blur"
+>
+  {isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+</button>
         {sceneId !== 'home' && (
           <button
             type="button"
