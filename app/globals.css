@@ -193,7 +193,7 @@
 .drift-particle-topleft { animation-name: drift-topleft; animation-timing-function: linear; animation-iteration-count: infinite; }
 @keyframes drift-topleft {
   from { transform: translate(0, 0) scale(var(--drift-scale, 1)); }
-  to { transform: translate(var(--drift-x, 60vw), var(--drift-y, 0)) scale(var(--drift-scale, 1)); }
+  to { transform: translate(var(--drift-x, 60vw) 150vh), scale(var(--drift-scale, 1)); }
 }
 
 .flutter { animation: flutter 1.2s ease-in-out infinite; }
