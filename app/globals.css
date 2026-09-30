@@ -189,10 +189,14 @@
   from { transform: translate(0, 0) scale(var(--drift-scale, 1)); }
   to { transform: translate(115vw, var(--drift-y, 0)) scale(var(--drift-scale, 1)); }
 }
-.flutter { animation: flutter 2s ease-in-out infinite alternate; }
+
+.flutter { animation: flutter 1.2s ease-in-out infinite; }
 @keyframes flutter {
-  from { transform: rotate(-30deg) translateY(-6px) rotateX(0deg); }
-  to { transform: rotate(40deg) translateY(6px) rotateX(60deg); }
+  0% { transform: rotate(-120deg) translateY(-8px) skewX(-15deg); }
+  25% { transform: rotate(45deg) translateY(-2px) skewX(10deg); }
+  50% { transform: rotate(-80deg) translateY(2px) skewX(-20deg); }
+  75% { transform: rotate(120deg) translateY(4px) skewX(15deg); }
+  100% { transform: rotate(-120deg) translateY(8px) rotateX(60deg); }
 }
 
 .wind-stroke { stroke-dasharray: 220 2600; stroke-dashoffset: 2820; animation: wind 8s linear infinite; }
