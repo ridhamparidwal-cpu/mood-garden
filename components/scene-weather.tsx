@@ -58,8 +58,8 @@ export function SceneWeather({ sceneId }: { sceneId: SceneId }) {
             kind="leaf"
             count={35}
             colors={['#1a2f1a', '#0f1f0f', '#1f3f1f', '#0d1f0d']}
-            minDuration={6}
-            maxDuration={10}
+            minDuration={3}
+            maxDuration={5}
             startPosition="top-left"
           />
         </>
