@@ -8,6 +8,7 @@ type Props = {
   colors: string[]
   minDuration: number
   maxDuration: number
+  startPosition?: 'left' | 'top-left'
 }
 
 function seeded(index: number, salt: number) {
@@ -21,20 +22,47 @@ const shapeClass: Record<ParticleKind, string> = {
   leaf: 'h-2 w-4 rounded-[100%_0_100%_0]',
 }
 
-export function DriftingParticles({ kind, count, colors, minDuration, maxDuration }: Props) {
+export function DriftingParticles({ kind, count, colors, minDuration, maxDuration, startPosition = 'left' }: Props) {
   return (
     <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
       {Array.from({ length: count }, (_, i) => {
         const duration = minDuration + seeded(i, 1) * (maxDuration - minDuration)
+        
+        let top: string
+        let left: string
+        let driftX: number
+        let driftY: number
+
+        if (startPosition === 'top-left') {
+          // Start from top-left area, fall downward and slightly right
+          top = `${Math.round(seeded(i, 2) * 30) - 15}%` // -15% to 15% (top area)
+          left = `${Math.round(seeded(i, 7) * 30) - 15}%` // -15% to 15% (left area)
+          driftX = 60 // Move right (was 115vw)
+          driftY = Math.round((seeded(i, 4) - 0.35) * 40) // Up/down movement
+        } else {
+          // Original behavior: start from left
+          top = `${Math.round(seeded(i, 2) * 90)}%`
+          left = -5
+          driftX = 115
+          driftY = Math.round((seeded(i, 4) - 0.35) * 40)
+        }
+
         const style = {
-          top: `${Math.round(seeded(i, 2) * 90)}%`,
+          top,
+          ...(startPosition === 'top-left' ? { left } : {}),
           animationDuration: `${duration.toFixed(2)}s`,
           animationDelay: `${(-seeded(i, 3) * duration).toFixed(2)}s`,
-          '--drift-y': `${Math.round((seeded(i, 4) - 0.35) * 40)}vh`,
+          '--drift-y': `${driftY}vh`,
+          '--drift-x': `${driftX}vw`,
           '--drift-scale': (0.6 + seeded(i, 5) * 0.8).toFixed(2),
         } as CSSProperties
+        
+        const className = startPosition === 'top-left' 
+          ? 'drift-particle-topleft absolute' 
+          : 'drift-particle absolute -left-[5%]'
+
         return (
-          <span key={i} className="drift-particle absolute -left-[5%]" style={style}>
+          <span key={i} className={className} style={style}>
             <span
               className={`flutter block ${shapeClass[kind]}`}
               style={{
