@@ -62,7 +62,7 @@ export const scenes: Record<SceneId, Scene> = {
     title: 'Angry',
     caption: 'Let the storm roar. It will pass.',
     imageFilter: 'saturate(0.85) brightness(0.78) contrast(1.1)',
-    rain: { density: 700, speed: 24, angle: 0, length: 30, opacity: 0.5, splash: true },
+    rain: { density: 350, speed: 24, angle: 0, length: 30, opacity: 0.5, splash: false },
   },
 }
 
