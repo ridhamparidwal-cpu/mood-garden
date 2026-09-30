@@ -38,7 +38,7 @@ export function DriftingParticles({ kind, count, colors, minDuration, maxDuratio
           top = `${Math.round(seeded(i, 2) * 30) - 15}%` // -15% to 15% (top area)
           left = `${Math.round(seeded(i, 7) * 30) - 15}%` // -15% to 15% (left area)
           driftX = 60 // Move right (was 115vw)
-          driftY = Math.round((seeded(i, 4) - 0.35) * 40) // Up/down movement
+          driftY = Math.round((seeded(i, 4) - 0.35) * 80) // Up/down movement
         } else {
           // Original behavior: start from left
           top = `${Math.round(seeded(i, 2) * 90)}%`
