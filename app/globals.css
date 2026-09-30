@@ -190,6 +190,12 @@
   to { transform: translate(115vw, var(--drift-y, 0)) scale(var(--drift-scale, 1)); }
 }
 
+.drift-particle-topleft { animation-name: drift-topleft; animation-timing-function: linear; animation-iteration-count: infinite; }
+@keyframes drift-topleft {
+  from { transform: translate(0, 0) scale(var(--drift-scale, 1)); }
+  to { transform: translate(60vw, var(--drift-y, 0)) scale(var(--drift-scale, 1)); }
+}
+
 .flutter { animation: flutter 1.2s ease-in-out infinite; }
 @keyframes flutter {
   0% { transform: rotate(-120deg) translateY(-8px) skewX(-15deg); }
@@ -240,7 +246,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ken-burns, .bubble-float, .drift-particle, .flutter, .wind-stroke, .grass-sway, .mist-band, .sun-rays, .lightning {
+  .ken-burns, .bubble-float, .drift-particle, .drift-particle-topleft, .flutter, .wind-stroke, .grass-sway, .mist-band, .sun-rays, .lightning {
     animation: none;
   }
 }
