@@ -57,7 +57,7 @@ export const scenes: Record<SceneId, Scene> = {
   },
   angry: {
     id: 'angry',
-    image: '/scenes/angry.png',
+    image: '/scenes/angry-new.png',
     alt: 'A dark ancient forest bending under a heavy thunderstorm',
     title: 'Angry',
     caption: 'Let the storm roar. It will pass.',
