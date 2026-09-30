@@ -27,7 +27,7 @@ export function MoodGarden() {
 }
 
   return (
-    <main className="relative h-dvh w-full overflow-hidden bg-slate-800 text-white">
+    <main ref={gardenRef} className="relative h-dvh w-full overflow-hidden bg-slate-800 text-white">
       <div className="absolute inset-0">
         {sceneIds.map((id) => (
           <div
