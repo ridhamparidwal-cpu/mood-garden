@@ -5,24 +5,21 @@ import Image from 'next/image'
 import {
   ArrowLeft,
   BookOpenText,
-  Bot,
   Flower2,
-  Heart,
   House,
   MessageCircleMore,
   PencilLine,
   Store,
   SunMedium,
   Trophy,
-  Trees,
 } from 'lucide-react'
-import { scenes, type MoodId, type SceneId } from '@/lib/moods'
+import { moodOrder, scenes, type MoodId, type SceneId } from '@/lib/moods'
 import { cn } from '@/lib/utils'
 import { SceneWeather } from '@/components/scene-weather'
 import { MoodBubbles, MoodDock } from '@/components/mood-picker'
 import { AmbienceToggle } from '@/components/ambience-toggle'
 
-type TabId = 'home' | 'journal' | 'garden' | 'shop' | 'friend'
+type TabId = 'home' | 'journal' | 'garden'
 
 type JournalEntry = {
   id: string
@@ -86,7 +83,7 @@ const initialPlants: PlantItem[] = [
   { id: 'tulip', name: 'Tulip', emoji: '🌷', cost: 20, level: 1, unlocked: true, position: 'left-8 top-16' },
   { id: 'sunflower', name: 'Sunflower', emoji: '🌻', cost: 40, level: 0, unlocked: false, position: 'right-10 top-10' },
   { id: 'rose', name: 'Rose', emoji: '🌹', cost: 60, level: 0, unlocked: false, position: 'left-16 bottom-20' },
-  { id: 'oak', name: 'Oak Tree', emoji: '🌳', cost: 100, level: 0, unlocked: false, position: 'right-16 bottom-14' },
+  { id: 'oak', name: 'Oak Tree', emoji: '����', cost: 100, level: 0, unlocked: false, position: 'right-16 bottom-14' },
   { id: 'hut', name: 'Garden Hut', emoji: '🏡', cost: 200, level: 0, unlocked: false, position: 'center bottom-12' },
 ]
 
@@ -102,8 +99,6 @@ const navItems: { id: TabId; label: string; icon: typeof House }[] = [
   { id: 'home', label: 'Home', icon: House },
   { id: 'journal', label: 'Journal', icon: BookOpenText },
   { id: 'garden', label: 'Garden', icon: Flower2 },
-  { id: 'shop', label: 'Shop', icon: Store },
-  { id: 'friend', label: 'Friend', icon: MessageCircleMore },
 ]
 
 function getStorage<T>(key: string, fallback: T): T {
@@ -155,6 +150,16 @@ export function MoodGarden() {
     setSceneId(mood)
     setActiveTab('home')
     setPoints((current) => current + moodMeta[mood].points)
+  }
+
+  const handleScreenTap = () => {
+    const cycle = ['home', ...moodOrder] as SceneId[]
+    const currentIndex = cycle.indexOf(sceneId)
+    const nextScene = cycle[(currentIndex + 1) % cycle.length]
+    setSceneId(nextScene)
+    if (nextScene !== 'home') {
+      setPoints((current) => current + moodMeta[nextScene].points)
+    }
   }
 
   const handleJournalSave = () => {
@@ -229,11 +234,11 @@ export function MoodGarden() {
     setIsFullscreen((current) => !current)
   }
 
-  const moodSummary = moodMeta[sceneId === 'home' ? 'calm' : sceneId]
+  const moodSummary = sceneId === 'home' ? moodMeta.calm : moodMeta[sceneId]
 
   return (
     <main ref={gardenRef} className="garden-shell">
-      <div className="garden-backdrop">
+      <div className="garden-backdrop" aria-hidden="true">
         {sceneIds.map((id) => (
           <div
             key={id}
@@ -261,6 +266,20 @@ export function MoodGarden() {
 
       <div className="garden-vignette" />
 
+      <div
+        className="screen-tap-area"
+        onClick={handleScreenTap}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault()
+            handleScreenTap()
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label="Cycle through moods"
+      />
+
       <header className="app-topbar">
         <button type="button" onClick={() => setSceneId('home')} className="topbar-brand">
           Mood Garden
@@ -280,53 +299,21 @@ export function MoodGarden() {
 
       <div className="app-body">
         {activeTab === 'home' && (
-          <section className="home-layout">
-            <div className="glass-panel hero-card">
-              <div className={`hero-badge ${sceneId === 'home' ? 'from-emerald-200/60' : ''}`}>
-                <span className="text-lg">{moodSummary.emoji}</span>
-                <span>{sceneId === 'home' ? 'A rainy afternoon' : moodSummary.label}</span>
-              </div>
-
-              <h1 className="hero-title">How does your heart feel today?</h1>
-              <p className="hero-subtitle">{sceneId === 'home' ? 'Pick a feeling and let your garden respond.' : moodSummary.subtitle}</p>
-
-              <div className="mood-bubble-wrap">
-                <MoodBubbles onSelect={handleMoodSelect} />
-              </div>
+          <section className="home-overlay">
+            <div className="home-badge">
+              <SunMedium className="size-4" />
+              <span>{sceneId === 'home' ? 'A rainy afternoon' : moodSummary.label}</span>
             </div>
-
-            <div className="glass-panel summary-card">
-              <div className="summary-header">
-                <span className="label-strong">Mood check-in</span>
-                <span className="tag">{sceneId === 'home' ? 'Ready' : moodSummary.label}</span>
-              </div>
-
-              <div className="metric-row">
-                <div className="metric-block">
-                  <Heart className="size-4 text-rose-200" />
-                  <span>Energy</span>
-                  <strong>{sceneId === 'happy' ? 'High' : sceneId === 'calm' ? 'Balanced' : sceneId === 'tired' ? 'Low' : 'Charged'}</strong>
-                </div>
-                <div className="metric-block">
-                  <Flower2 className="size-4 text-emerald-200" />
-                  <span>Garden</span>
-                  <strong>{gardenPlants.filter((plant) => plant.unlocked).length} grown</strong>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setActiveTab('journal')}
-                className="primary-button"
-              >
-                Write in journal
-              </button>
+            <h1 className="home-title">{sceneId === 'home' ? 'How does your heart feel today?' : moodSummary.subtitle}</h1>
+            <p className="home-subtitle">Tap the screen to change the mood of your garden.</p>
+            <div className="mood-bubble-wrap">
+              <MoodBubbles onSelect={handleMoodSelect} />
             </div>
           </section>
         )}
 
         {activeTab === 'journal' && (
-          <section className="content-panel">
+          <section className="content-panel journal-panel">
             <div className="panel-header">
               <div>
                 <p className="eyebrow">Journal</p>
@@ -337,65 +324,47 @@ export function MoodGarden() {
               </button>
             </div>
 
-            <div className="journal-grid">
-              <div className="glass-panel write-card">
-                <div className="quick-moods">
-                  {(['happy', 'calm', 'tired', 'angry'] as MoodId[]).map((mood) => (
-                    <button
-                      key={mood}
-                      type="button"
-                      onClick={() => setSceneId(mood)}
-                      className={cn('mood-tag', sceneId === mood && 'active')}
-                    >
-                      {moodMeta[mood].emoji} {moodMeta[mood].label}
-                    </button>
-                  ))}
-                </div>
-
-                <label className="journal-label" htmlFor="journal-entry">
-                  <PencilLine className="size-4" /> Today’s mood
-                </label>
-                <textarea
-                  id="journal-entry"
-                  value={journalDraft}
-                  onChange={(event) => setJournalDraft(event.target.value)}
-                  placeholder="I felt ..."
-                  className="journal-box"
-                />
-                <button type="button" onClick={handleJournalSave} className="primary-button">
-                  Save entry
-                </button>
+            <div className="glass-panel write-card journal-only-card">
+              <div className="quick-moods">
+                {(['happy', 'calm', 'tired', 'angry'] as MoodId[]).map((mood) => (
+                  <button
+                    key={mood}
+                    type="button"
+                    onClick={() => setSceneId(mood)}
+                    className={cn('mood-tag', sceneId === mood && 'active')}
+                  >
+                    {moodMeta[mood].emoji} {moodMeta[mood].label}
+                  </button>
+                ))}
               </div>
 
-              <div className="glass-panel entries-card">
-                <h3>Recent entries</h3>
-                <div className="entry-list">
-                  {entries.length === 0 ? (
-                    <p className="empty-state">No thoughts saved yet. Your garden is waiting.</p>
-                  ) : (
-                    entries.map((entry) => (
-                      <div key={entry.id} className="entry-item">
-                        <div className="entry-header">
-                          <span>{moodMeta[entry.mood].emoji}</span>
-                          <strong>{moodMeta[entry.mood].label}</strong>
-                          <time>{new Date(entry.createdAt).toLocaleDateString()}</time>
-                        </div>
-                        <p>{entry.text}</p>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
+              <label className="journal-label" htmlFor="journal-entry">
+                <PencilLine className="size-4" /> Today’s mood
+              </label>
+              <textarea
+                id="journal-entry"
+                value={journalDraft}
+                onChange={(event) => setJournalDraft(event.target.value)}
+                placeholder="I felt ..."
+                className="journal-box"
+              />
+              <button type="button" onClick={handleJournalSave} className="primary-button">
+                Save entry
+              </button>
             </div>
           </section>
         )}
 
         {activeTab === 'garden' && (
-          <section className="content-panel">
+          <section className="content-panel garden-panel">
             <div className="panel-header">
               <div>
                 <p className="eyebrow">My Garden</p>
                 <h2>Your little ecosystem</h2>
+              </div>
+              <div className="stat-pill big-pill">
+                <Trophy className="size-4" />
+                <span>{points} points</span>
               </div>
             </div>
 
@@ -418,77 +387,31 @@ export function MoodGarden() {
                 ))}
               </div>
             </div>
-          </section>
-        )}
 
-        {activeTab === 'shop' && (
-          <section className="content-panel">
-            <div className="panel-header">
-              <div>
-                <p className="eyebrow">Shop</p>
-                <h2>Grow your rewards</h2>
+            <div className="glass-panel garden-shop-panel">
+              <div className="shop-header">
+                <span>Garden shop</span>
+                <Store className="size-4" />
               </div>
-              <div className="stat-pill big-pill">
-                <Trophy className="size-4" />
-                <span>{points} points</span>
-              </div>
-            </div>
+              <div className="shop-grid">
+                {shopItems.map((item) => {
+                  const unlocked = gardenPlants.find((plant) => plant.id === item.id)?.unlocked ?? false
 
-            <div className="shop-grid">
-              {shopItems.map((item) => {
-                const unlocked = gardenPlants.find((plant) => plant.id === item.id)?.unlocked ?? false
-
-                return (
-                  <div key={item.id} className="glass-panel shop-card">
-                    <div className="shop-emoji">{item.emoji}</div>
-                    <h3>{item.name}</h3>
-                    <p>{item.cost} points</p>
-                    <button
-                      type="button"
-                      onClick={() => handleBuyPlant(item.id)}
-                      className={cn('primary-button small', unlocked && 'secondary')}
-                    >
-                      {unlocked ? 'Level up' : 'Buy'}
-                    </button>
-                  </div>
-                )
-              })}
-            </div>
-          </section>
-        )}
-
-        {activeTab === 'friend' && (
-          <section className="content-panel">
-            <div className="panel-header">
-              <div>
-                <p className="eyebrow">Friend</p>
-                <h2>Chat with your garden buddy</h2>
-              </div>
-            </div>
-
-            <div className="glass-panel chat-panel">
-              <div className="chat-window">
-                {chatMessages.map((message) => (
-                  <div key={message.id} className={cn('chat-bubble', message.from === 'user' ? 'user' : 'bot')}>
-                    {message.text}
-                  </div>
-                ))}
-              </div>
-
-              <div className="chat-input-row">
-                <input
-                  type="text"
-                  value={chatInput}
-                  onChange={(event) => setChatInput(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') handleChatSend()
-                  }}
-                  placeholder="Ask your friend for advice..."
-                  className="chat-input"
-                />
-                <button type="button" onClick={handleChatSend} className="primary-button small">
-                  <Bot className="size-4" /> Send
-                </button>
+                  return (
+                    <div key={item.id} className="shop-card">
+                      <div className="shop-emoji">{item.emoji}</div>
+                      <h3>{item.name}</h3>
+                      <p>{item.cost} points</p>
+                      <button
+                        type="button"
+                        onClick={() => handleBuyPlant(item.id)}
+                        className={cn('primary-button small', unlocked && 'secondary')}
+                      >
+                        {unlocked ? 'Level up' : 'Buy'}
+                      </button>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           </section>
@@ -521,7 +444,10 @@ export function MoodGarden() {
           </button>
         </div>
       )}
+
+      <div className="friend-bubble">
+        <MessageCircleMore className="size-4" />
+      </div>
     </main>
   )
 }
-
