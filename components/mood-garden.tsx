@@ -9,6 +9,7 @@ import {
   House,
   MessageCircleMore,
   PencilLine,
+  Sparkles,
   Store,
   SunMedium,
   Trophy,
@@ -16,8 +17,16 @@ import {
 import { moodOrder, scenes, type MoodId, type SceneId } from '@/lib/moods'
 import { cn } from '@/lib/utils'
 import { SceneWeather } from '@/components/scene-weather'
-import { MoodBubbles, MoodDock } from '@/components/mood-picker'
+import { MoodBubbles } from '@/components/mood-picker'
 import { AmbienceToggle } from '@/components/ambience-toggle'
+import { FriendChat } from '@/components/friend-chat'
+import {
+  AUTO_MOOD_DEBOUNCE_MS,
+  AUTO_MOOD_MIN_CHARS,
+  AUTO_MOOD_MIN_CONFIDENCE,
+  detectMood,
+  type MoodDetection,
+} from '@/lib/ai'
 
 type TabId = 'home' | 'journal' | 'garden'
 
@@ -36,12 +45,6 @@ type PlantItem = {
   level: number
   unlocked: boolean
   position: string
-}
-
-type ChatMessage = {
-  id: string
-  text: string
-  from: 'user' | 'bot'
 }
 
 const sceneIds = Object.keys(scenes) as SceneId[]
@@ -120,10 +123,10 @@ export function MoodGarden() {
   const [journalDraft, setJournalDraft] = useState('')
   const [entries, setEntries] = useState<JournalEntry[]>([])
   const [gardenPlants, setGardenPlants] = useState<PlantItem[]>(initialPlants)
-  const [chatInput, setChatInput] = useState('')
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
-    { id: 'welcome', from: 'bot', text: 'Hey friend, how are you feeling today? I can help you grow a calmer, brighter garden.' },
-  ])
+  const [chatOpen, setChatOpen] = useState(false)
+  const [autoMood, setAutoMood] = useState(true)
+  const [detection, setDetection] = useState<MoodDetection | null>(null)
+  const [detectStatus, setDetectStatus] = useState<'idle' | 'checking' | 'offline'>('idle')
   const [isFullscreen, setIsFullscreen] = useState(false)
 
   useEffect(() => {
@@ -143,6 +146,39 @@ export function MoodGarden() {
   useEffect(() => {
     window.localStorage.setItem('mood-garden-plants', JSON.stringify(gardenPlants))
   }, [gardenPlants])
+
+  // Journal: while you write, ask the AI backend which mood the text sounds like
+  // and, when it is confident, switch the wallpaper to match.
+  useEffect(() => {
+    if (activeTab !== 'journal' || !autoMood) return
+
+    const text = journalDraft.trim()
+    if (text.length < AUTO_MOOD_MIN_CHARS) {
+      setDetection(null)
+      setDetectStatus('idle')
+      return
+    }
+
+    const controller = new AbortController()
+    const timer = setTimeout(async () => {
+      setDetectStatus('checking')
+      try {
+        const result = await detectMood(text, controller.signal)
+        setDetection(result)
+        setDetectStatus('idle')
+        if (result.mood && result.confidence >= AUTO_MOOD_MIN_CONFIDENCE) {
+          setSceneId(result.mood)
+        }
+      } catch {
+        if (!controller.signal.aborted) setDetectStatus('offline')
+      }
+    }, AUTO_MOOD_DEBOUNCE_MS)
+
+    return () => {
+      clearTimeout(timer)
+      controller.abort()
+    }
+  }, [journalDraft, autoMood, activeTab])
 
   const scene = scenes[sceneId]
 
@@ -175,6 +211,9 @@ export function MoodGarden() {
 
     setEntries((current) => [nextEntry, ...current])
     setJournalDraft('')
+    setAutoMood(true)
+    setDetection(null)
+    setDetectStatus('idle')
     setPoints((current) => current + 8)
   }
 
@@ -202,29 +241,6 @@ export function MoodGarden() {
     }
   }
 
-  const handleChatSend = () => {
-    const trimmed = chatInput.trim()
-    if (!trimmed) return
-
-    const userMessage: ChatMessage = { id: crypto.randomUUID(), from: 'user', text: trimmed }
-    let response = 'That sounds important. Tell me more about what feels heavy right now.'
-
-    const lower = trimmed.toLowerCase()
-    if (lower.includes('angry') || lower.includes('frustrated') || lower.includes('upset')) {
-      response = 'I hear you. A quick walk or a few slow breaths can help your garden settle. Want to journal what set it off?'
-    } else if (lower.includes('tired') || lower.includes('exhausted')) {
-      response = 'Rest is part of growth. Try a smaller step today and let your garden breathe for a moment.'
-    } else if (lower.includes('calm') || lower.includes('happy') || lower.includes('good')) {
-      response = 'That is lovely. Keep nurturing the good energy in your garden—it grows when you pay attention to it.'
-    } else if (lower.includes('plant') || lower.includes('garden')) {
-      response = 'Your garden is responding to your energy. Calm moments and tiny wins help everything bloom faster.'
-    }
-
-    setChatMessages((current) => [...current, userMessage, { id: crypto.randomUUID(), from: 'bot', text: response }])
-    setChatInput('')
-    setPoints((current) => current + 2)
-  }
-
   const toggleFullscreen = async () => {
     if (!document.fullscreenElement) {
       await gardenRef.current?.requestFullscreen()
@@ -235,6 +251,8 @@ export function MoodGarden() {
   }
 
   const moodSummary = sceneId === 'home' ? moodMeta.calm : moodMeta[sceneId]
+  const detectedMood =
+    detection?.mood && detection.confidence >= AUTO_MOOD_MIN_CONFIDENCE ? detection.mood : null
 
   return (
     <main ref={gardenRef} className="garden-shell">
@@ -305,10 +323,16 @@ export function MoodGarden() {
               <span>{sceneId === 'home' ? 'A rainy afternoon' : moodSummary.label}</span>
             </div>
             <h1 className="home-title">{sceneId === 'home' ? 'How does your heart feel today?' : moodSummary.subtitle}</h1>
-            <p className="home-subtitle">Tap the screen to change the mood of your garden.</p>
-            <div className="mood-bubble-wrap">
-              <MoodBubbles onSelect={handleMoodSelect} />
-            </div>
+            {sceneId === 'home' && (
+              <>
+                <p className="home-subtitle">
+                  Pick how you feel, or write in your journal and the garden will sense it.
+                </p>
+                <div className="mood-bubble-wrap">
+                  <MoodBubbles onSelect={handleMoodSelect} />
+                </div>
+              </>
+            )}
           </section>
         )}
 
@@ -330,12 +354,46 @@ export function MoodGarden() {
                   <button
                     key={mood}
                     type="button"
-                    onClick={() => setSceneId(mood)}
+                    onClick={() => {
+                      setSceneId(mood)
+                      setAutoMood(false)
+                    }}
                     className={cn('mood-tag', sceneId === mood && 'active')}
                   >
                     {moodMeta[mood].emoji} {moodMeta[mood].label}
                   </button>
                 ))}
+              </div>
+
+              <div className="mood-sense" aria-live="polite">
+                {!autoMood ? (
+                  <span>Auto-detect is off.</span>
+                ) : detectStatus === 'offline' ? (
+                  <span>The AI backend isn&apos;t running, so pick a mood above.</span>
+                ) : detectStatus === 'checking' ? (
+                  <span className="mood-sense-chip">
+                    <Sparkles className="size-3.5" /> Sensing your mood...
+                  </span>
+                ) : detectedMood ? (
+                  <span className="mood-sense-chip">
+                    <Sparkles className="size-3.5" /> Feels like {moodMeta[detectedMood].emoji}{' '}
+                    {moodMeta[detectedMood].label}
+                  </span>
+                ) : (
+                  <span>Write a little and I&apos;ll sense your mood.</span>
+                )}
+                <button
+                  type="button"
+                  className="mood-sense-toggle"
+                  onClick={() => setAutoMood((current) => !current)}
+                >
+                  {autoMood ? 'Turn off' : 'Turn on'}
+                </button>
+                {detection?.note && (
+                  <p className="mood-sense-note" role="note">
+                    {detection.note}
+                  </p>
+                )}
               </div>
 
               <label className="journal-label" htmlFor="journal-entry">
@@ -438,16 +496,28 @@ export function MoodGarden() {
             <span>{moodMeta[sceneId].emoji}</span>
             <span>{moodMeta[sceneId].label}</span>
           </div>
-          <MoodDock active={sceneId} onSelect={handleMoodSelect} />
           <button type="button" onClick={() => setSceneId('home')} className="ghost-button compact">
-            <ArrowLeft className="size-4" /> Home
+            <ArrowLeft className="size-4" /> Back to home
           </button>
         </div>
       )}
 
-      <div className="friend-bubble">
-        <MessageCircleMore className="size-4" />
-      </div>
+      <FriendChat
+        open={chatOpen}
+        onClose={() => setChatOpen(false)}
+        scene={sceneId}
+        onUserMessage={() => setPoints((current) => current + 2)}
+      />
+
+      <button
+        type="button"
+        className="friend-bubble"
+        onClick={() => setChatOpen((current) => !current)}
+        aria-label={chatOpen ? 'Close chat with Fern' : 'Chat with Fern, your garden friend'}
+        aria-expanded={chatOpen}
+      >
+        <MessageCircleMore className="size-5" />
+      </button>
     </main>
   )
 }

@@ -35,34 +35,3 @@ export function MoodBubbles({ onSelect }: { onSelect: (mood: MoodId) => void }) 
     </ul>
   )
 }
-
-export function MoodDock({ active, onSelect }: { active: MoodId; onSelect: (mood: MoodId) => void }) {
-  return (
-    <nav aria-label="Switch mood">
-      <ul className="flex flex-wrap gap-2">
-        {moodOrder.map((id) => {
-          const { label, icon: Icon } = moodMeta[id]
-          const isActive = id === active
-          return (
-            <li key={id}>
-              <button
-                type="button"
-                aria-pressed={isActive}
-                onClick={() => onSelect(id)}
-                className={cn(
-                  'flex items-center gap-2 rounded-full border px-4 py-2 text-sm backdrop-blur-md transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white',
-                  isActive
-                    ? 'border-white bg-white text-slate-800'
-                    : 'border-white/40 bg-white/15 text-white hover:bg-white/30',
-                )}
-              >
-                <Icon aria-hidden="true" className="size-4" />
-                {label}
-              </button>
-            </li>
-          )
-        })}
-      </ul>
-    </nav>
-  )
-}
